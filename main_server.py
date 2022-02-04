@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, url_for
+from flask import Flask, render_template, request, url_for, abort, flash, redirect
 import time
 
 
@@ -37,7 +37,7 @@ users = [
 ]
 
 @app.route('/login', methods=['POST'])
-def login():
+def login_messages():
     username = request.json['username']
     password = request.json['password']
     login_ok = False
@@ -114,6 +114,31 @@ def send_messages():
     return {
         'ok':True
     }
+
+@app.route('/profile/<username>')
+def profile(username):
+    for user in users:
+        if user['username'] == username:
+            if 'logged_in' in session:
+                if session['logged_in'] == username:
+                    return render_template('profile.html')
+            flash('Вам сюда нельзя. Залогинтесь')
+            return redirect(url_for('login'))
+    abort(404)
+
+
+@app.route('/logged_in', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        for user in users:
+            if request.form['username'] == user['username']:
+                if request.form['password'] == user['password']:
+                    return redirect(f"/profile/{user['username']}")
+                else:
+                    flash("Неверный пароль")
+                    break
+            else:
+                flash("Неверный логин")
 
 
 if __name__ == '__main__':
